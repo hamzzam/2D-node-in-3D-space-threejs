@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Three.js camera</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <link type="text/css" rel="stylesheet" href="main.css">
+  </head>
+
+  <body>
+    <div id="info">
+      <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - Demo<br />
+    </div>
+    <div id="node">
+      <b>2D Node</b>
+    </div>
+    
+
+<script type="module">
+  
+import * as THREE from './three/three.module.js';
+import {OrbitControls} from './three/controls/OrbitControls.js';
+
+  let camera, scene, grid, renderer;
+  let node = document.getElementById("node");
+
+  let origin = new THREE.Vector3();
+
+  init();
+  render();
+
+  function init() {
+
+    const container = document.createElement( 'div' );
+    document.body.appendChild( container );
+
+    camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.25, 10000 );
+    camera.position.set( 0, 100, 5000 );
+
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color( 0xbbbbbb );
+
+    grid = new THREE.GridHelper( 500, 10, 0xffffff, 0xffffff );
+    grid.material.opacity = 0.5;
+    grid.material.depthWrite = false;
+    grid.material.transparent = true;
+    scene.add( grid );
+
+    const light = new THREE.AmbientLight( 0x404040 ); // soft white light
+    scene.add( light );
+
+    renderer = new THREE.WebGLRenderer( { antialias: true } );
+    renderer.setPixelRatio( window.devicePixelRatio );
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1;
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    container.appendChild( renderer.domElement );
+
+    const controls = new OrbitControls( camera, renderer.domElement );
+    controls.addEventListener( 'change', render ); // use if there is no animation loop
+    controls.minDistance = 50;
+    controls.maxDistance = 10000;
+    controls.target.set( 0, 0, - 0.2 );
+    controls.update();
+
+    window.addEventListener( 'resize', onWindowResize );
+
+  }
+
+  function onWindowResize() {
+
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    renderer.setSize( window.innerWidth, window.innerHeight );
+
+    render();
+
+  }
+
+  function worldToNDC ( worldPoint , activeCamera) {
+    let NDCPoint = worldPoint.clone();
+    activeCamera.updateMatrixWorld();
+    NDCPoint.project( activeCamera );
+    return NDCPoint;
+  }
+
+  function NDCToScreenCoordinates (NDCPoint) {
+    let NDCToPixelX = ((NDCPoint.x + 1) / 2) * window.innerWidth;
+    let NDCToPixelY = (1 - (NDCPoint.y + 1) / 2) * window.innerHeight;
+    let screenPoint = new THREE.Vector2(NDCToPixelX, NDCToPixelY);
+    return screenPoint;
+  }
+
+  function render() {
+
+    renderer.render( scene, camera );
+
+    grid.getWorldPosition(origin);
+    console.log(origin);
+
+    let screenPoint = NDCToScreenCoordinates( worldToNDC( origin, camera ) );
+
+    node.style.position = "absolute";
+    node.style.left = screenPoint.x + 'px';
+    node.style.top = screenPoint.y + 'px';
+  }
+
+</script>
+
+  </body>
+</html>
